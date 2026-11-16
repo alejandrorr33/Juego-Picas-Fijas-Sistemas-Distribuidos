@@ -1,0 +1,47 @@
+# ============================================================
+#  Manifiesto de Kubernetes para "Picas y Fijas".
+#  Le DESCRIBE a Kubernetes lo que queremos tener funcionando;
+#  Kubernetes se encarga de lograrlo y mantenerlo así.
+#
+#  Tiene dos objetos, separados por "---":
+#    1. Deployment -> cuántas copias del juego queremos y con qué imagen
+#    2. Service    -> cómo llegar al juego desde afuera
+# ============================================================
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: picas-fijas              # nombre del Deployment
+spec:
+  # UNA sola copia (pod). Es a propósito: los juegos se guardan en la
+  # memoria del proceso. Con varias copias, cada una tendría SUS PROPIOS
+  # juegos y los jugadores verían datos distintos según a cuál lleguen.
+  replicas: 1
+  selector:
+    matchLabels:
+      app: picas-fijas           # "los pods que me pertenecen son los que tengan esta etiqueta"
+  template:                      # plantilla para crear cada pod
+    metadata:
+      labels:
+        app: picas-fijas         # etiqueta que se le pone a cada pod
+    spec:
+      containers:
+        - name: picas-fijas
+          image: alejandrorr33/picas-fijas:1.0   # la imagen que subimos a Docker Hub
+          ports:
+            - containerPort: 5000                # el puerto donde escucha Flask
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: picas-fijas              # nombre del Service
+spec:
+  type: NodePort                 # abre un puerto en los nodos para entrar desde afuera
+  selector:
+    app: picas-fijas             # envía el tráfico a los pods con esta etiqueta
+  ports:
+    - port: 80                   # puerto del Service dentro del clúster
+      targetPort: 5000           # puerto del contenedor (Flask)
+      nodePort: 30080            # puerto abierto en cada nodo (rango permitido: 30000-32767)

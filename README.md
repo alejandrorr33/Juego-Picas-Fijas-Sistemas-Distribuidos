@@ -46,4 +46,28 @@ python app.py
 ```
 
 Luego abre <http://127.0.0.1:5000/> en el navegador.
-Mario Alejandro Rey Reina - 160004833
+
+## Imagen Docker
+
+```
+docker build -t alejandrorr33/picas-fijas:1.0 .
+docker push alejandrorr33/picas-fijas:1.0
+```
+
+La imagen está publicada en Docker Hub como `alejandrorr33/picas-fijas:1.0`.
+
+## Despliegue en Kubernetes (por ejemplo, en Killercoda)
+
+```
+git clone https://github.com/alejandrorr33/Juego-Picas-Fijas-Sistemas-Distribuidos.git
+cd Juego-Picas-Fijas-Sistemas-Distribuidos
+kubectl apply -f kubernetes.yaml
+kubectl get pods
+```
+
+El juego queda disponible en el puerto **30080** de los nodos (Service tipo NodePort):
+`curl http://localhost:30080/juego`.
+
+**Nota de diseño:** el Deployment usa `replicas: 1` porque el estado de los juegos
+se guarda en memoria (el enunciado no exige base de datos). Con varias réplicas,
+cada pod tendría su propia copia de los datos y serían inconsistentes.
