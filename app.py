@@ -270,5 +270,9 @@ def jugar(id_juego):
 
 
 # Arranca el servidor cuando ejecutamos "python app.py"
+#   host="0.0.0.0" -> acepta conexiones que vengan de FUERA de la máquina
+#                     (necesario dentro de un contenedor; con el valor por
+#                     defecto, 127.0.0.1, solo aceptaría conexiones internas)
+#   port=5000      -> el "número de puerta" donde escucha el servidor
 if __name__ == "__main__":
-    app.run(debug=True)   # debug=True: se reinicia solo al guardar cambios
+    app.run(host="0.0.0.0", port=5000)
