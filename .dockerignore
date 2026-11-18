@@ -1,4 +1,3 @@
-# Lo que NO se copia dentro de la imagen
 .git
 __pycache__/
 *.pyc

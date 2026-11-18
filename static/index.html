@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <title>Picas y Fijas</title>
-  <!-- CSS: solo da un poco de orden visual, no tiene lógica -->
   <style>
     body    { font-family: sans-serif; max-width: 720px; margin: 20px auto; padding: 0 10px; }
     section { border: 1px solid #ccc; border-radius: 6px; padding: 10px 15px; margin-bottom: 12px; }
@@ -16,9 +15,8 @@
 <body>
 
   <h1>Picas y Fijas</h1>
-  <p id="mensaje"></p>   <!-- aquí mostramos éxitos y errores -->
+  <p id="mensaje"></p>
 
-  <!-- ====== 1. LOGIN ====== -->
   <section>
     <h2>1. Entrar</h2>
     <input id="nombre" placeholder="Tu nombre">
@@ -26,7 +24,6 @@
     <strong id="quienSoy"></strong>
   </section>
 
-  <!-- ====== 2. CREAR / UNIRSE / LISTAR ====== -->
   <section>
     <h2>2. Crear o unirse a un juego</h2>
     <input id="secreto" placeholder="Tu número secreto (4 dígitos)">
@@ -39,7 +36,6 @@
     </table>
   </section>
 
-  <!-- ====== 3. JUGAR ====== -->
   <section>
     <h2>3. Juego actual</h2>
     <p id="estadoJuego">No estás viendo ningún juego.</p>
@@ -48,72 +44,50 @@
     <ol id="historial"></ol>
   </section>
 
-
 <script>
-// =============================================================
-//  JavaScript: la lógica de la página. Su único trabajo es
-//  enviar peticiones al servidor (igual que hacíamos con curl)
-//  y mostrar las respuestas. Las REGLAS viven en el servidor.
-// =============================================================
+let miNombre = null;
+let juegoActual = null;
 
-let miNombre = null;      // quién soy (después de hacer login)
-let juegoActual = null;   // id del juego que estoy viendo
-
-
-// Muestra un mensaje arriba de la página (verde o rojo)
-function mostrar(texto, esError) {
-  const p = document.getElementById("mensaje");
-  p.textContent = texto;
-  if (esError) {
-    p.className = "error";
-  } else {
-    p.className = "ok";
-  }
+function el(id) {
+  return document.getElementById(id);
 }
 
+function mostrar(texto, esError) {
+  el("mensaje").textContent = texto;
+  el("mensaje").className = esError ? "error" : "ok";
+}
 
-// Función central: envía una petición HTTP al servidor.
-// Es el equivalente a nuestro comando curl:
-//   metodo -> -X POST / PUT / GET
-//   ruta   -> la URL, por ejemplo "/login"
-//   cuerpo -> lo que iba en -d (un objeto que convertimos a JSON)
 async function llamar(metodo, ruta, cuerpo) {
   const opciones = {
     method: metodo,
-    headers: { "Content-Type": "application/json" }   // igual que -H en curl
+    headers: { "Content-Type": "application/json" }
   };
   if (cuerpo !== undefined) {
-    opciones.body = JSON.stringify(cuerpo);   // objeto JS -> texto JSON
+    opciones.body = JSON.stringify(cuerpo);
   }
-  const respuesta = await fetch(ruta, opciones);   // envía y ESPERA la respuesta
-  const datos = await respuesta.json();            // texto JSON -> objeto JS
-  return { ok: respuesta.ok, datos: datos };       // ok = true si el código es 2xx
+  const respuesta = await fetch(ruta, opciones);
+  const datos = await respuesta.json();
+  return { ok: respuesta.ok, datos: datos };
 }
 
-
-// ---------- 1. LOGIN:  POST /login ----------
 async function entrar() {
-  const nombre = document.getElementById("nombre").value;
-  const r = await llamar("POST", "/login", { nombre: nombre });
+  const r = await llamar("POST", "/login", { nombre: el("nombre").value });
   if (!r.ok) {
     mostrar(r.datos.error, true);
     return;
   }
   miNombre = r.datos.nombre;
-  document.getElementById("quienSoy").textContent = "Jugando como: " + miNombre;
+  el("quienSoy").textContent = "Jugando como: " + miNombre;
   mostrar(r.datos.mensaje, false);
   listarJuegos();
 }
 
-
-// ---------- 2a. CREAR:  POST /juego ----------
 async function crearJuego() {
   if (miNombre === null) {
     mostrar("Primero entra con tu nombre", true);
     return;
   }
-  const numero = document.getElementById("secreto").value;
-  const r = await llamar("POST", "/juego", { nombre: miNombre, numero: numero });
+  const r = await llamar("POST", "/juego", { nombre: miNombre, numero: el("secreto").value });
   if (!r.ok) {
     mostrar(r.datos.error, true);
     return;
@@ -124,15 +98,12 @@ async function crearJuego() {
   verJuego();
 }
 
-
-// ---------- 2b. UNIRSE:  PUT /juego/<id> ----------
 async function unirse(id) {
   if (miNombre === null) {
     mostrar("Primero entra con tu nombre", true);
     return;
   }
-  const numero = document.getElementById("secreto").value;
-  const r = await llamar("PUT", "/juego/" + id, { nombre: miNombre, numero: numero });
+  const r = await llamar("PUT", "/juego/" + id, { nombre: miNombre, numero: el("secreto").value });
   if (!r.ok) {
     mostrar(r.datos.error, true);
     return;
@@ -143,44 +114,37 @@ async function unirse(id) {
   verJuego();
 }
 
-
-// ---------- 2c. LISTAR:  GET /juego ----------
 async function listarJuegos() {
   const r = await llamar("GET", "/juego");
-  const tabla = document.getElementById("tablaJuegos");
-  tabla.innerHTML = "";   // borramos las filas viejas
+  const tabla = el("tablaJuegos");
+  tabla.innerHTML = "";
 
   for (const juego of r.datos) {
     const fila = document.createElement("tr");
     agregarCelda(fila, juego.id);
     agregarCelda(fila, juego.creador);
     agregarCelda(fila, juego.estado);
-    agregarCelda(fila, juego.ganador === null ? "-" : juego.ganador);
+    agregarCelda(fila, juego.ganador ?? "-");
 
-    // Columna de acciones: botón "Ver" siempre, "Unirme" si se puede
     const acciones = document.createElement("td");
-    acciones.appendChild(crearBoton("Ver", function () {
+    acciones.appendChild(crearBoton("Ver", () => {
       juegoActual = juego.id;
       verJuego();
     }));
     if (juego.estado === "esperando" && juego.creador !== miNombre) {
-      acciones.appendChild(crearBoton("Unirme", function () {
-        unirse(juego.id);
-      }));
+      acciones.appendChild(crearBoton("Unirme", () => unirse(juego.id)));
     }
     fila.appendChild(acciones);
     tabla.appendChild(fila);
   }
 }
 
-// Ayudantes para construir la tabla.
-// Usamos textContent (y no innerHTML) para que si alguien se pone
-// un nombre con código HTML, se muestre como texto y no se ejecute.
 function agregarCelda(fila, texto) {
   const celda = document.createElement("td");
   celda.textContent = texto;
   fila.appendChild(celda);
 }
+
 function crearBoton(texto, alHacerClic) {
   const boton = document.createElement("button");
   boton.textContent = texto;
@@ -188,8 +152,6 @@ function crearBoton(texto, alHacerClic) {
   return boton;
 }
 
-
-// ---------- 3a. VER UN JUEGO:  GET /juego/<id> ----------
 async function verJuego() {
   if (juegoActual === null) {
     return;
@@ -201,7 +163,6 @@ async function verJuego() {
   }
   const juego = r.datos;
 
-  // Texto del estado
   let texto = "Juego " + juego.id + " (" + juego.jugadores.join(" vs ") + "): ";
   if (juego.estado === "esperando") {
     texto += "esperando a un segundo jugador.";
@@ -213,10 +174,9 @@ async function verJuego() {
   } else {
     texto += "terminado. Ganó " + juego.ganador + ".";
   }
-  document.getElementById("estadoJuego").textContent = texto;
+  el("estadoJuego").textContent = texto;
 
-  // Historial de intentos
-  const lista = document.getElementById("historial");
+  const lista = el("historial");
   lista.innerHTML = "";
   for (const intento of juego.intentos) {
     const item = document.createElement("li");
@@ -226,16 +186,13 @@ async function verJuego() {
   }
 }
 
-
-// ---------- 3b. JUGAR:  POST /juego/<id>/jugar ----------
 async function jugar() {
   if (juegoActual === null || miNombre === null) {
     mostrar("Primero entra y únete a un juego", true);
     return;
   }
-  const numero = document.getElementById("intento").value;
-  const r = await llamar("POST", "/juego/" + juegoActual + "/jugar",
-                         { nombre: miNombre, numero: numero });
+  const numero = el("intento").value;
+  const r = await llamar("POST", "/juego/" + juegoActual + "/jugar", { nombre: miNombre, numero: numero });
   if (!r.ok) {
     mostrar(r.datos.error, true);
     return;
@@ -245,22 +202,17 @@ async function jugar() {
   } else {
     mostrar(numero + ": " + r.datos.fijas + " fijas, " + r.datos.picas + " picas", false);
   }
-  document.getElementById("intento").value = "";
+  el("intento").value = "";
   verJuego();
   listarJuegos();
 }
 
-
-// ---------- Actualización automática ----------
-// Cada 2 segundos le preguntamos al servidor cómo va todo, para
-// enterarnos cuando el OTRO jugador se une o juega (esto se llama
-// "polling": el servidor nunca habla primero, así que preguntamos).
-setInterval(function () {
+setInterval(() => {
   listarJuegos();
   verJuego();
 }, 2000);
 
-listarJuegos();   // al abrir la página, cargamos la lista una vez
+listarJuegos();
 </script>
 </body>
 </html>

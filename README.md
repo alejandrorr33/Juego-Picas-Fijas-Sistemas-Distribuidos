@@ -50,11 +50,11 @@ Luego abre <http://127.0.0.1:5000/> en el navegador.
 ## Imagen Docker
 
 ```
-docker build -t alejandrorr33/picas-fijas:1.0 .
-docker push alejandrorr33/picas-fijas:1.0
+docker build -t alejandrorr33/picas-fijas:1.1 .
+docker push alejandrorr33/picas-fijas:1.1
 ```
 
-La imagen está publicada en Docker Hub como `alejandrorr33/picas-fijas:1.0`.
+La imagen está publicada en Docker Hub como `alejandrorr33/picas-fijas:1.1`.
 
 ## Despliegue en Kubernetes (por ejemplo, en Killercoda)
 

@@ -1,3 +1,2 @@
-# Archivos que Python genera solo al ejecutar (no son código nuestro)
 __pycache__/
 *.pyc
